@@ -23,7 +23,16 @@ with sync_playwright() as p:
     expect(page.locator('#latest-status')).to_have_text('Not run')
     expect(page.locator('#count-high')).to_have_text('—')
     page.screenshot(path=str(args.screenshots / 'empty-desktop.png'), full_page=True)
+    page.locator('#recommended-demo').click()
+    expect(page.locator('#scenario')).to_have_value('combined')
+    assert page.request.get(args.url + '/api/runs').json() == []
+    page.get_by_role('link', name='Help & terms', exact=True).click()
+    expect(page.locator('#help')).to_be_visible()
+    expect(page.locator('#run')).to_be_hidden()
+    page.go_back()
+    expect(page.locator('#run')).to_be_visible()
     for scenario, status, counts in [('combined','REVIEW_REQUIRED',['1','1','1']), ('no_drift','NO_DRIFT',['0','0','0']), ('unsupported','MANUAL_REVIEW',['0','0','0'])]:
+        page.get_by_role('link', name='Run an audit', exact=True).click()
         page.locator('#scenario').select_option(scenario)
         held = []
         # A saved no-drift run must remain confirmed if its history refresh fails.
@@ -46,7 +55,8 @@ with sync_playwright() as p:
         if scenario == 'no_drift':
             expect(page.locator('#error')).to_contain_text('Audit saved, but history could not refresh')
         page.unroute('**/api/runs')
-        expect(page.locator('#latest-status')).to_have_text(status)
+        expect(page.locator('#latest-status')).to_have_attribute('data-status', status)
+        expect(page.locator('#review-content > .badge')).to_have_text({'REVIEW_REQUIRED': 'Needs your review', 'NO_DRIFT': 'No supported changes', 'MANUAL_REVIEW': 'Needs investigation'}[status])
         for risk, count in zip(['high','medium','low'], counts):
             expect(page.locator('#count-' + risk)).to_have_text(count)
         record = page.request.get(args.url + '/api/runs').json()[0]
@@ -55,19 +65,23 @@ with sync_playwright() as p:
         downloaded = json.loads(Path(download.value.path()).read_text())
         assert downloaded == record
         if scenario == 'combined':
-            expect(page.locator('.finding')).to_have_count(3)
-            page.locator('.finding summary').first.click()
-            expect(page.locator('.finding').first).to_have_attribute('open','')
+            expect(page.locator('#review-content .finding')).to_have_count(3)
+            page.locator('#review-content .finding summary').first.click()
+            expect(page.locator('#review-content .finding').first).to_have_attribute('open','')
             for finding in record['audit']['findings']:
-                detail = page.locator('.finding').filter(has_text=finding['category'].upper() + ' configuration changed')
+                detail = page.locator(f'#review-content .finding[data-category="{finding["category"]}"]')
                 assert detail.locator('pre').text_content() == '\n'.join(finding['evidence']) + '\n'
             assert page.locator('#patch pre').text_content() == '\n'.join(record['audit']['proposal']['patch']) + '\n'
             configs = page.locator('.config-grid pre').all_text_contents()
             assert configs == [record['configurations']['approved'], record['configurations']['observed']]
+            page.get_by_role('link', name='Review draft response →', exact=True).first.click()
+            expect(page.locator('#response h2')).to_be_focused()
+            page.get_by_role('link', name='Next: record your decision →', exact=True).click()
+            expect(page.locator('#decisions h2')).to_be_focused()
             page.evaluate('window.scrollTo(0,0)')
             page.screenshot(path=str(args.screenshots / 'combined-desktop.png'), full_page=True)
         elif scenario == 'no_drift':
-            expect(page.locator('.finding')).to_have_count(0)
+            expect(page.locator('#review-content .finding')).to_have_count(0)
             expect(page.locator('#patch')).to_contain_text('No baseline-update patch is needed')
         else:
             expect(page.locator('#review-content')).to_contain_text('Raw configuration is withheld')
@@ -77,11 +91,12 @@ with sync_playwright() as p:
     expect(page.locator('#history-rows tr')).to_have_count(3)
     page.reload()
     expect(page.locator('#history-rows tr')).to_have_count(3)
+    page.get_by_role('link', name='Past audits', exact=True).click()
     page.get_by_role('button', name='Open Combined changes', exact=False).click()
     expect(page.locator('#selected-meta')).to_contain_text('Combined changes')
-    expect(page.locator('#latest-status')).to_have_text('MANUAL_REVIEW')
+    expect(page.locator('#latest-status')).to_have_attribute('data-status', 'MANUAL_REVIEW')
     page.set_viewport_size({'width':390,'height':844})
-    page.locator('.finding summary').first.click()
+    page.locator('#review-content .finding summary').first.click()
     page.screenshot(path=str(args.screenshots / 'combined-mobile.png'), full_page=True)
     assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth')
     for code in page.locator('.config-grid pre').all():
@@ -89,9 +104,11 @@ with sync_playwright() as p:
         assert box['x'] >= 0 and box['x'] + box['width'] <= 390
     # Simulated network failure must produce an actionable visible error.
     page.route('**/api/runs', lambda route: route.abort())
+    page.get_by_role('link', name='Past audits', exact=True).click()
     page.locator('#refresh').click()
     expect(page.locator('#error')).to_be_visible()
     page.unroute('**/api/runs')
+    page.get_by_role('link', name='Past audits', exact=True).click()
     page.locator('#refresh').click()
     expect(page.locator('#error')).to_be_hidden()
     assert not errors, errors

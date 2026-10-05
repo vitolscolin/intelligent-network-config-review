@@ -571,3 +571,24 @@ input:focus-visible,textarea:focus-visible {outline:3px solid #2484cc;outline-of
 
 .scenario-field,.governance-form {min-width:0}
 .governance-form {grid-template-columns:minmax(0,1fr)}
+
+/* Focused views and first-visit guidance. */
+[hidden] { display: none !important; }
+nav a[aria-current="page"] { background: #243c4c; color: #fff; border-left: 3px solid #6bd3c6; }
+.welcome { border-top: 4px solid var(--accent, #087f79); }
+.welcome h2 { font-size: 1.65rem; }
+.welcome > p { max-width: 78ch; }
+.journey { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; padding: 0; list-style: none; margin: 24px 0; }
+.journey li { padding: 18px; background: #f1f7f6; border-radius: 8px; }
+.journey strong, .journey span { display: block; }
+.journey span { margin-top: 8px; line-height: 1.55; }
+.next-step { display: block; margin: 22px 0; }
+.glossary { max-width: 78ch; }
+.glossary dt { font-weight: 700; margin-top: 24px; }
+.glossary dd { margin: 7px 0 0; line-height: 1.65; }
+section { scroll-margin-top: 24px; }
+#latest-status { font-size: 1.3rem; }
+:focus-visible { outline: 3px solid #087f79; outline-offset: 4px; }
+@media (max-width: 700px) { .journey { grid-template-columns: 1fr; gap: 8px; } .journey li { padding: 12px; } }
+#audit-form { display: flex; flex-direction: column; align-items: stretch; }
+#run-button { align-self: flex-start; margin-top: 12px; }

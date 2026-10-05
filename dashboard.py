@@ -323,6 +323,7 @@ class Handler(BaseHTTPRequestHandler):
             if match and UUID.fullmatch(match[1]):
                 return self.respond(200, self.server.store.read(match[1]), download=bool(match[2]))
             assets = {'/': ('index.html', 'text/html; charset=utf-8'),
+                      '/navigation.js': ('navigation.js', 'text/javascript; charset=utf-8'),
                       '/app.js': ('app.js', 'text/javascript; charset=utf-8'),
                       '/governance.js': ('governance.js', 'text/javascript; charset=utf-8'),
                       '/style.css': ('style.css', 'text/css; charset=utf-8')}

@@ -62,16 +62,24 @@ Then open **http://127.0.0.1:8766**. No configuration file is required.
 
 ## Try the review workflow
 
-1. Select **Combined changes**, then **Run audit**.
-2. Open the **HIGH / ACL configuration changed** finding for its explanation and
-   supporting evidence.
-3. Compare reference and observed configurations. Line order, including ACL
+1. On **Run an audit**, choose **Use recommended demo** to select the built-in
+   sample and **Combined changes**. This only prepares the form; select **Run audit**
+   when ready to save a real result.
+2. In **Review results**, open the **HIGH / Traffic access rules (ACLs) changed**
+   finding to read its explanation and supporting evidence.
+3. Compare expected and observed configurations. Line order, including ACL
    ordering, is preserved. On narrow screens, the panels stack vertically.
-4. Select **Review draft response** to inspect the baseline-update patch.
-5. Try **No configuration change** and **Unsupported syntax** to see the other
-   audit outcomes.
-6. Reopen a run from **Audit history**, or select **Download JSON** to export the
-   execution currently being reviewed.
+4. Select **Review draft response** to inspect the proposed baseline update, then
+   **Next: record your decision** to save your reasoning.
+5. Return to **Run an audit** and try **No configuration change** and
+   **Unsupported syntax** to see the other outcomes.
+6. Reopen a result from **Past audits**, or select **Download audit record (JSON)**
+   to export the execution being reviewed.
+
+**Help & terms** explains the network terminology. Technical status codes, audit
+identifiers, and baseline provenance remain available under **Technical details &
+baseline approval** and in downloaded records. Navigation links can be bookmarked;
+the browser Back button returns to the previous view.
 
 The scenario menu includes no change, whitespace only, SNMP location, VLAN label,
 static route, ACL rule, ACL ordering, combined changes, and five exception cases:
@@ -80,13 +88,13 @@ rejection, and missing baseline.
 
 | Status | What it means | Individual-audit CLI exit code |
 | --- | --- | --- |
-| `NO_DRIFT` | No differences in the supported configuration categories | 0 |
-| `REVIEW_REQUIRED` | Supported drift; a draft awaits administrator review | 0 |
-| `MANUAL_REVIEW` | Baseline or input validation failed; risk is not assessed | 2 |
+| `NO_DRIFT` · No supported changes | No differences in the supported configuration categories | 0 |
+| `REVIEW_REQUIRED` · Needs your review | Supported drift; a draft awaits administrator review | 0 |
+| `MANUAL_REVIEW` · Needs investigation | Baseline or input validation failed; risk is not assessed | 2 |
 
 Zero findings in a manual-review case do **not** mean the configuration is safe.
-Raw configuration is withheld from those dashboard results. Overview always
-shows the latest stored audit, even while an older run is open below it.
+Raw configuration is withheld from those dashboard results. The latest-audit summary on **Run an audit** always reflects the newest stored
+result, even when you open an older result in **Review results**.
 Timestamps display in the browser's local timezone. A new workspace starts empty;
 counts are derived from stored executions.
 
@@ -102,15 +110,15 @@ The registry starts empty. A fixture reference or Git commit is never automatica
 promoted to an approved baseline. Existing executions retain their original output
 and are not retroactively assigned approval.
 
-1. Under **Baseline registry**, propose the built-in synthetic reference with a
+1. Under **Baselines**, propose the built-in synthetic reference with a
    proposer name and reason/change reference.
 2. Open the candidate, inspect its exact configuration and SHA-256 digest, then
    record **Approve this exact version** or **Reject this candidate** with a name
    and reason. Approval creates a ledger event; it does not change a device.
-3. Choose the approved version under **Comparison baseline**, then run an audit.
+3. Choose the approved version under **Expected settings (baseline)**, then run an audit.
    The execution records the approval in effect at selection. Default fixture
    mode remains available for the original demonstration expectations.
-4. Under **Administrator decisions**, inspect the selected audit and record an
+4. Under **Record your decision**, inspect the selected audit and record an
    acceptance, rejection, acknowledgement, investigation, or deferral. Available
    actions depend on the audit outcome. Each decision covers the entire audit.
 5. After `ACCEPT_OBSERVED`, the selected audit's observation becomes an available

@@ -1,19 +1,19 @@
 // Decision records are independent of auditor output and device execution.
 const reviewLabels = {
-  ACCEPT_OBSERVED: ['Accept observed configuration for consideration', 'Records that the observation is intended. Propose and approve a separate baseline candidate to use it in future audits.'],
+  ACCEPT_OBSERVED: ['Accept observed settings for consideration', 'Records that the observation is intended. Propose and approve a separate baseline candidate to use it in future audits.'],
   REJECT_CHANGE: ['Reject the observed change', 'Records an unwanted change. Restoration must follow a separate authorized procedure; no device commands are sent.'],
   INVESTIGATE: ['Request investigation', 'Records that further evidence or investigation is required. It does not resolve validation errors.'],
   DEFER: ['Defer a decision', 'Records why the decision is deferred. Findings and drafts remain unchanged.'],
-  ACKNOWLEDGE: ['Acknowledge no supported drift', 'Acknowledges this audit result. It is not a complete device-security assessment.'],
+  ACKNOWLEDGE: ['Acknowledge these results', 'Acknowledges this audit result. It is not a complete device-security assessment.'],
 };
 let reviewContext = null;
 
 function eventList(events) {
   const list = node('ol', undefined, 'decision-events');
   events.forEach(event => {
-    const item = node('li');
-    item.append(node('strong', `${event.action} · ${event.actor}`), node('p', event.reason),
-      node('small', `${date(event.recorded_at)} · Revision ${event.revision} · ${event.event_id}`));
+    const item = node('li'); item.dataset.action = event.action;
+    item.append(node('strong', `${reviewLabels[event.action]?.[0] || {PROPOSE: 'Proposed', APPROVE: 'Approved', REJECT: 'Rejected', RETIRE: 'Retired'}[event.action] || event.action} · ${event.actor}`), node('p', event.reason),
+      node('small', `${date(event.recorded_at)} · Revision ${event.revision}`));
     list.append(item);
   });
   return list;
@@ -45,7 +45,7 @@ function eligibleSource(record, context) {
   fixture.value = 'fixture';
   source.append(fixture);
   if (context?.evidence_matches && context.events.at(-1)?.action === 'ACCEPT_OBSERVED') {
-    const observed = node('option', `Accepted observation · ${record.scenario_name} · ${record.audit.audit_id}`);
+    const observed = node('option', `Accepted observation · ${record.scenario_name}`);
     observed.value = record.id;
     source.append(observed);
   }
@@ -67,9 +67,9 @@ async function showReviewLog(record) {
     const context = await api(`/api/runs/${record.id}/reviews`);
     if (selected?.id !== record.id) return;
     reviewContext = {record, ...context};
-    log.replaceChildren(node('p', `${record.scenario_name} · Audit ${context.audit_id} · Decisions cover the entire audit.`));
+    log.replaceChildren(node('p', `${record.scenario_name} · Decisions cover the entire audit.`));
     log.append(context.events.length ? eventList(context.events) : node('p', 'No administrator decision has been recorded.'));
-    log.append(node('p', 'Later decisions supersede earlier decisions in this view; all records remain in the ledger. Audit findings and original drafts are unchanged.', 'muted'));
+    log.append(node('p', 'Later decisions supersede earlier decisions in this view; the full decision history is kept. Audit findings and original drafts are unchanged.', 'muted'));
     if (!context.evidence_matches) {
       log.append(node('p', 'Evidence differs from the recorded reviews. Further decisions are blocked; inspect local storage.'));
       return;
@@ -112,11 +112,11 @@ $('review-decision-form').onsubmit = async event => {
 function baselineCard(candidate) {
   const detail = node('details', undefined, 'finding baseline-card');
   const summary = node('summary');
-  summary.append(badge(candidate.status, candidate.status), node('span', `${candidate.sha256.slice(0, 12)} · ${candidate.source.kind === 'BUILT_IN_FIXTURE' ? 'Fixture reference' : 'Accepted audit observation'}`));
+  summary.append(badge(candidate.status, candidate.status), node('span', `${candidate.baseline_id.slice(0, 8)} · ${candidate.source.kind === 'BUILT_IN_FIXTURE' ? 'Fixture reference' : 'Accepted audit observation'}`));
   detail.append(summary);
   const body = node('div', undefined, 'finding-body');
-  body.append(node('p', `Version ${candidate.baseline_id} · SHA-256 ${candidate.sha256}`, 'provenance-note'),
-    node('pre', candidate.configuration), eventList(candidate.events));
+  const technical = node('details'); technical.append(node('summary', 'Version identifiers'), node('p', `Version ${candidate.baseline_id} · SHA-256 ${candidate.sha256}`, 'provenance-note'));
+  body.append(node('h3', 'Inspect these exact settings before deciding'), node('pre', candidate.configuration), technical, eventList(candidate.events));
   const allowed = candidate.status === 'PENDING' ? ['APPROVE', 'REJECT'] : candidate.status === 'APPROVED' ? ['RETIRE'] : [];
   if (allowed.length) {
     const form = node('form', undefined, 'governance-form');
@@ -157,9 +157,9 @@ async function refreshBaselines() {
   baselines.forEach(candidate => list.append(baselineCard(candidate)));
   const select = $('baseline-selection'), previous = select.value;
   select.replaceChildren();
-  const fixture = node('option', 'Fixture reference · not governed'); fixture.value = ''; select.append(fixture);
+  const fixture = node('option', 'Built-in sample · no recorded approval'); fixture.value = ''; select.append(fixture);
   baselines.filter(candidate => candidate.status === 'APPROVED').forEach(candidate => {
-    const option = node('option', `Approved · ${candidate.sha256.slice(0, 12)} · ${candidate.baseline_id}`);
+    const option = node('option', `Approved ${candidate.source.kind === "BUILT_IN_FIXTURE" ? "sample" : "observation"} · ${candidate.baseline_id.slice(0, 8)}`);
     option.value = candidate.baseline_id; select.append(option);
   });
   if ([...select.options].some(option => option.value === previous)) select.value = previous;
@@ -177,7 +177,7 @@ $('baseline-proposal-form').onsubmit = async event => {
       source: $('baseline-source').value, actor: $('baseline-actor').value, reason: $('baseline-reason').value,
     });
     if (!result) return;
-    $('baseline-message').textContent = `Candidate ${result.baseline_id} recorded. Open it below to inspect and decide.`;
+    $('baseline-message').textContent = `Candidate recorded. Open it below to inspect and decide.`;
     await refreshBaselines();
   } catch (e) { $('baseline-message').textContent = e.message; }
 };

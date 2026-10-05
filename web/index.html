@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Configuration Review · Network Operations</title>
 <link rel="stylesheet" href="/style.css">
+<script src="/navigation.js" defer></script>
 <script src="/app.js" defer>
 </script>
 <script src="/governance.js" defer></script>
@@ -20,13 +21,11 @@
 </div>
 <p class="nav-label">WORKSPACE</p>
 <nav aria-label="Main navigation">
-<a href="#overview">Overview</a>
 <a href="#run">Run an audit</a>
-<a href="#review">Review changes</a>
-<a href="#response">Draft response</a>
-<a href="#decisions">Administrator decisions</a>
-<a href="#baselines">Baseline registry</a>
-<a href="#history">Audit history</a>
+<a href="#review">Review results</a>
+<a href="#baselines">Baselines</a>
+<a href="#history">Past audits</a>
+<a href="#help">Help &amp; terms</a>
 </nav>
 <div class="sidebar-bottom">
 <span class="dot">
@@ -38,19 +37,27 @@
 <div>
 <p class="eyebrow">INTELLIGENT NETWORK CONFIGURATION REVIEW</p>
 <h1>Configuration review</h1>
-<p class="sub">Understand drift. Assess risk. Review the next step.</p>
+<p class="sub">See what changed, understand the risk, and decide what happens next.</p>
 </div>
 <span class="pill">Synthetic demo</span>
 </header>
 <div class="notice">
 <strong>Sample device: lab-router</strong>
-<span>Local fixtures only. Synthetic audits and local decision records. No patches or device changes are executed.</span>
+<span>Sample data only. Audits and decisions stay on this computer. No settings are applied to devices.</span>
 </div>
 <div id="error" role="alert" hidden>
 </div>
+<div data-view="start">
+<section class="welcome panel">
+<p class="eyebrow">START HERE</p><h2>A configuration check, explained</h2>
+<p>An audit compares the settings you expect with a saved sample of the settings found. This demo uses a fictional router. Nothing connects to or changes real equipment.</p>
+<ol class="journey"><li><strong>1. Compare</strong><span>Run a sample audit below.</span></li><li><strong>2. Understand</strong><span>Open a finding to see what changed and why it matters.</span></li><li><strong>3. Decide</strong><span>Review the draft and save your decision.</span></li></ol>
+<p>First visit? Combined changes demonstrates location, route, and access-rule changes.</p>
+<button id="recommended-demo" class="secondary" disabled>Use recommended demo</button>
+</section>
 <section id="overview">
 <div class="section-head">
-<h2>Overview</h2>
+<h2>Your latest audit</h2>
 <span id="latest-time" class="muted">No executions yet</span>
 </div>
 <div class="metrics">
@@ -80,18 +87,18 @@
 <section id="run" class="panel">
 <div class="section-head">
 <div>
-<p class="eyebrow">01 / EXECUTE</p>
-<h2>Run a synthetic audit</h2>
+<p class="eyebrow">STEP 1 · COMPARE</p>
+<h2>Run an audit</h2>
 </div>
 <span class="tag">13 scenarios</span>
 </div>
-<p>Start with combined changes, then inspect the high-risk ACL finding and its draft response.</p>
+<p>Choose a sample situation. Running an audit saves its results so you can come back later.</p>
 <form id="audit-form">
 <div class="scenario-field">
-<label for="baseline-selection">Comparison baseline</label>
-<select id="baseline-selection"><option value="">Fixture reference · not governed</option></select>
-<p class="muted">Approved registry versions are optional. Changing the baseline can change scenario outcomes.</p>
-<label for="scenario">Demonstration scenario</label>
+<label for="baseline-selection">Expected settings (baseline)</label>
+<select id="baseline-selection"><option value="">Built-in sample · no recorded approval</option></select>
+<p class="muted">Use the built-in sample to get started. Later, you can approve a baseline in Baselines and select it here. A different baseline may produce different results.</p>
+<label for="scenario">Sample situation</label>
 <select id="scenario" required disabled>
 </select>
 <p id="scenario-description" class="muted">
@@ -102,70 +109,78 @@
 </form>
 <div id="progress" role="status" aria-live="polite">Loading local history…</div>
 </section>
+</div>
+<div data-view="results" hidden>
 <section id="review">
 <div class="section-head">
 <div>
-<p class="eyebrow">02 / INSPECT</p>
-<h2>Review changes</h2>
+<p class="eyebrow">STEP 2 · UNDERSTAND</p>
+<h2>Review your results</h2>
 </div>
-<a id="download" class="text-link" hidden>Download JSON ↓</a>
+<a id="download" class="text-link" hidden>Download audit record (JSON) ↓</a>
 </div>
 <div id="selected-meta" class="muted">
 </div>
-<div id="review-content" class="panel empty">Your first audit starts here.<p>Run a scenario to see actual findings and ordered configuration changes.</p>
+<div id="review-content" class="panel empty">Your first audit starts here.<p><a href="#run">Run your first audit</a> to see the changes and their risk.</p>
 </div>
 </section>
 <section id="response">
 <div class="section-head">
 <div>
-<p class="eyebrow">03 / REVIEW</p>
-<h2>Proposed response</h2>
+<p class="eyebrow">INSPECT THE DRAFT</p>
+<h2>What would accepting these settings change?</h2>
 </div>
 <span class="tag">Review only</span>
 </div>
 <div class="panel">
 <div class="draft-notice">
 <strong>Draft · Requires administrator review</strong>
-<p>Accepting an observation records a review decision only. A separate candidate approval makes a version eligible for future audits. Restoring a device is a separate authorized procedure; this dashboard never executes it.</p>
+<p>This draft shows how the baseline would change to match the observed settings. It does not restore the original settings. Saving a decision records your intent; approving a baseline is a separate step. Neither action changes a device.</p>
 </div>
+<p class="muted">Reading the draft: − removes a line from the reference; + adds an observed line. Line order is preserved.</p>
 <div id="patch" class="muted">A baseline-update draft will appear after a supported change is detected.</div>
+<p><a class="text-link" href="#decisions">Next: record your decision →</a></p>
 </div>
 </section>
 <section id="decisions">
-<div class="section-head"><div><p class="eyebrow">04 / RECORD</p><h2>Administrator decisions</h2></div><a id="review-download" class="text-link" hidden>Download review record ↓</a></div>
+<div class="section-head"><div><p class="eyebrow">STEP 3 · DECIDE</p><h2>Record your decision</h2></div><a id="review-download" class="text-link" hidden>Download review record ↓</a></div>
 <div class="panel">
-<p class="governance-notice"><strong>Local decision log · Self-declared identity.</strong> Names are not authenticated. This prototype records decisions; it does not enforce organizational authority or separation of duties. Use synthetic data only.</p>
+<p class="governance-notice"><strong>Local decision log · Self-declared identity.</strong> Names are entered by you, not verified by a login. This demo does not check who has authority to approve a change. Use sample information only.</p>
 <div id="review-log" class="muted">Open a completed audit to record a decision.</div>
 <form id="review-decision-form" class="governance-form" hidden>
 <label for="review-action">Decision for the entire audit</label><select id="review-action" required></select>
 <p id="review-action-help" class="muted"></p>
 <label for="review-actor">Administrator name (self-declared)</label><input id="review-actor" required maxlength="100" autocomplete="off">
-<label for="review-reason">Reason / change reference</label><textarea id="review-reason" required maxlength="2000" rows="3"></textarea>
+<label for="review-reason">Why are you making this decision?</label><textarea id="review-reason" required maxlength="2000" rows="3" placeholder="Explain your reasoning and any follow-up needed."></textarea>
 <button id="review-submit" type="submit">Record review decision</button>
 </form>
 <p id="review-message" role="status" aria-live="polite"></p>
 </div>
 </section>
+</div>
+<div data-view="baselines" hidden>
 <section id="baselines">
-<div class="section-head"><div><p class="eyebrow">REFERENCE GOVERNANCE</p><h2>Baseline registry</h2></div><a href="/api/baselines/download" class="text-link">Download registry ↓</a></div>
+<div class="section-head"><div><p class="eyebrow">OPTIONAL · MANAGE EXPECTED SETTINGS</p><h2>Baselines</h2></div><a href="/api/baselines/download" class="text-link">Download registry ↓</a></div>
 <div class="panel">
-<p>Propose a version → inspect its exact content → explicitly approve or reject. Only approved versions can be selected for a new audit. Retiring a version prevents future selection and preserves its history.</p>
+<p>A baseline is the configuration you want future audits to compare against. You can try the dashboard without approving one. To create an approved version: propose a candidate below, open it to inspect the settings, then record an approval. Retiring a version stops future use and keeps its history.</p>
 <form id="baseline-proposal-form" class="governance-form">
-<label for="baseline-source">Candidate source</label><select id="baseline-source"><option value="fixture">Built-in synthetic reference</option></select>
-<p class="muted">An observed configuration becomes eligible after an ACCEPT_OBSERVED review decision. Proposing it does not approve it.</p>
+<label for="baseline-source">Settings to propose</label><select id="baseline-source"><option value="fixture">Built-in synthetic reference</option></select>
+<p class="muted">To propose settings from an audit, first open its results and record “Accept observed settings for consideration.” Then choose that observation here. A proposal still needs a separate approval.</p>
 <label for="baseline-actor">Proposer name (self-declared)</label><input id="baseline-actor" required maxlength="100" autocomplete="off">
-<label for="baseline-reason">Reason / change reference</label><textarea id="baseline-reason" required maxlength="2000" rows="3"></textarea>
+<label for="baseline-reason">Why are you making this decision?</label><textarea id="baseline-reason" required maxlength="2000" rows="3" placeholder="Explain your reasoning and any follow-up needed."></textarea>
 <button type="submit">Propose baseline candidate</button>
 </form>
 <p id="baseline-message" role="status" aria-live="polite"></p>
 <div id="baseline-list" class="muted">Loading baseline registry…</div>
 </div>
 </section>
+</div>
+<div data-view="history" hidden>
 <section id="history">
 <div class="section-head">
 <div>
 <p class="eyebrow">EXECUTION RECORDS</p>
-<h2>Audit history</h2>
+<h2>Past audits</h2>
 </div>
 <button id="refresh" class="secondary">Refresh history</button>
 </div>
@@ -187,6 +202,10 @@
 <p id="history-empty" class="empty">No dashboard runs yet. Original CLI evidence is kept separately.</p>
 </div>
 </section>
+</div>
+<div data-view="help" hidden><section id="help" class="panel"><h2>A quick guide to the terms</h2>
+<dl class="glossary"><dt>Audit</dt><dd>A saved comparison of expected and observed settings.</dd><dt>Baseline</dt><dd>The expected settings used as a reference. The built-in sample has no recorded administrator approval.</dd><dt>Observed configuration</dt><dd>The settings found in a sample snapshot. This demo does not read a real device.</dd><dt>Drift / finding</dt><dd>Drift means a difference from the baseline. A finding explains a supported change and its risk.</dd><dt>SNMP, VLAN, route, ACL</dt><dd>SNMP location describes where a device is located. VLANs group network traffic. Routes direct traffic to its destination. ACLs are ordered rules that allow or block traffic; their order matters.</dd><dt>Draft patch</dt><dd>A text proposal for updating the baseline. It is never applied by this dashboard.</dd><dt>JSON record</dt><dd>A downloadable structured file containing the saved evidence or decision history.</dd></dl>
+<p><a href="#run">Ready to try it? Run a sample audit →</a></p></section></div>
 <footer>Local fixture workspace · Ordered comparisons · Deterministic risk rules<br>Prototype scope: SNMP location, VLANs, static routes and ACLs.</footer>
 </main>
 </body>
