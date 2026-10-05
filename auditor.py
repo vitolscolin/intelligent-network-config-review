@@ -81,8 +81,8 @@ def diff(before, after):
         before, after, fromfile="approved", tofile="observed", lineterm=""))
 
 
-def audit(repo, commit, snapshot, database, report):
-    run = {"audit_id": str(uuid.uuid4()),
+def audit(repo, commit, snapshot, database, report, *, audit_id=None):
+    run = {"audit_id": audit_id or str(uuid.uuid4()),
            "collected_at": datetime.now(timezone.utc).isoformat(),
            "parser": PARSER, "device": "lab-router",
            "mode": "local_fixture", "stages": [], "findings": []}

@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Configuration Review · Network Operations</title>
+<link rel="stylesheet" href="/style.css">
+<script src="/app.js" defer>
+</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to main content</a>
+<aside class="sidebar">
+<div class="brand">
+<span class="brand-icon">N</span>
+<span>NETWORK<br>
+<strong>REVIEW</strong>
+</span>
+</div>
+<p class="nav-label">WORKSPACE</p>
+<nav aria-label="Main navigation">
+<a href="#overview">Overview</a>
+<a href="#run">Run an audit</a>
+<a href="#review">Review changes</a>
+<a href="#response">Draft response</a>
+<a href="#history">Audit history</a>
+</nav>
+<div class="sidebar-bottom">
+<span class="dot">
+</span> Local demonstration<p>Deterministic rules<br>No connected equipment</p>
+</div>
+</aside>
+<main id="main">
+<header>
+<div>
+<p class="eyebrow">INTELLIGENT NETWORK CONFIGURATION REVIEW</p>
+<h1>Configuration review</h1>
+<p class="sub">Understand drift. Assess risk. Review the next step.</p>
+</div>
+<span class="pill">Synthetic demo</span>
+</header>
+<div class="notice">
+<strong>Sample device: lab-router</strong>
+<span>Local fixtures only. Audits generate review drafts; no device or baseline changes are applied.</span>
+</div>
+<div id="error" role="alert" hidden>
+</div>
+<section id="overview">
+<div class="section-head">
+<h2>Overview</h2>
+<span id="latest-time" class="muted">No executions yet</span>
+</div>
+<div class="metrics">
+<article class="metric status-card">
+<span>Latest audit</span>
+<strong id="latest-status">Not run</strong>
+<small id="latest-scenario">Choose a scenario to begin</small>
+</article>
+<article class="metric">
+<span>High severity</span>
+<strong id="count-high">—</strong>
+<small>Access control changes</small>
+</article>
+<article class="metric">
+<span>Medium severity</span>
+<strong id="count-medium">—</strong>
+<small>VLAN &amp; routing changes</small>
+</article>
+<article class="metric">
+<span>Low severity</span>
+<strong id="count-low">—</strong>
+<small>Location metadata changes</small>
+</article>
+</div>
+<p id="overview-note" class="muted">Counts will come from the latest stored audit.</p>
+</section>
+<section id="run" class="panel">
+<div class="section-head">
+<div>
+<p class="eyebrow">01 / EXECUTE</p>
+<h2>Run a synthetic audit</h2>
+</div>
+<span class="tag">13 scenarios</span>
+</div>
+<p>Start with combined changes, then inspect the high-risk ACL finding and its draft response.</p>
+<form id="audit-form">
+<div class="scenario-field">
+<label for="scenario">Demonstration scenario</label>
+<select id="scenario" required disabled>
+</select>
+<p id="scenario-description" class="muted">
+</p>
+</div>
+<button id="run-button" type="submit" disabled>Run audit <span aria-hidden="true">→</span>
+</button>
+</form>
+<div id="progress" role="status" aria-live="polite">Loading local history…</div>
+</section>
+<section id="review">
+<div class="section-head">
+<div>
+<p class="eyebrow">02 / INSPECT</p>
+<h2>Review changes</h2>
+</div>
+<a id="download" class="text-link" hidden>Download JSON ↓</a>
+</div>
+<div id="selected-meta" class="muted">
+</div>
+<div id="review-content" class="panel empty">Your first audit starts here.<p>Run a scenario to see actual findings and ordered configuration changes.</p>
+</div>
+</section>
+<section id="response">
+<div class="section-head">
+<div>
+<p class="eyebrow">03 / REVIEW</p>
+<h2>Proposed response</h2>
+</div>
+<span class="tag">Review only</span>
+</div>
+<div class="panel">
+<div class="draft-notice">
+<strong>Draft · Requires administrator review</strong>
+<p>Accepting an observed configuration updates what is considered approved. Restoring the approved configuration changes the device back. These are different decisions; this dashboard performs neither.</p>
+</div>
+<div id="patch" class="muted">A baseline-update draft will appear after a supported change is detected.</div>
+</div>
+</section>
+<section id="history">
+<div class="section-head">
+<div>
+<p class="eyebrow">EXECUTION RECORDS</p>
+<h2>Audit history</h2>
+</div>
+<button id="refresh" class="secondary">Refresh history</button>
+</div>
+<div class="panel table-wrap">
+<table>
+<caption class="sr-only">Locally persisted dashboard executions</caption>
+<thead>
+<tr>
+<th scope="col">Executed (local time)</th>
+<th scope="col">Scenario</th>
+<th scope="col">Status</th>
+<th scope="col">Highest risk</th>
+<th scope="col">Review</th>
+</tr>
+</thead>
+<tbody id="history-rows">
+</tbody>
+</table>
+<p id="history-empty" class="empty">No dashboard runs yet. Original CLI evidence is kept separately.</p>
+</div>
+</section>
+<footer>Local fixture workspace · Ordered comparisons · Deterministic risk rules<br>Prototype scope: SNMP location, VLANs, static routes and ACLs.</footer>
+</main>
+</body>
+</html>

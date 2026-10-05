@@ -19,17 +19,8 @@ interface GigabitEthernet0/0
 """
 
 
-def demo(root):
-    root.mkdir(parents=True, exist_ok=False)
-    repo = root / "baseline_repo"
-    repo.mkdir()
-    git(repo, "init", "--quiet")
-    (repo / "baseline.cfg").write_text(BASELINE)
-    git(repo, "add", "baseline.cfg")
-    git(repo, "-c", "user.name=MVP Demo", "-c",
-        "user.email=mvp@example.invalid", "commit", "--quiet",
-        "-m", "Approved synthetic lab baseline")
-    commit = git(repo, "rev-parse", "HEAD").strip()
+def scenarios():
+    """Shared synthetic fixtures; no user-provided configuration input."""
     snmp = BASELINE.replace("Lab_A", "Lab_B")
     vlan = BASELINE.replace("name STAFF", "name USERS")
     route = BASELINE.replace("192.0.2.1", "192.0.2.254")
@@ -39,7 +30,7 @@ def demo(root):
         "access-list 101 deny ip any any\naccess-list 101 permit ip any any")
     combined = snmp.replace("192.0.2.1", "192.0.2.254").replace(
         "permit ip any any", "deny ip any any", 1)
-    cases = [
+    return [
         ("no_drift", BASELINE, "NO_DRIFT", []),
         ("whitespace", "!\n" + BASELINE.replace("\n", "  \n"), "NO_DRIFT", []),
         ("empty", "", "MANUAL_REVIEW", []),
@@ -56,6 +47,20 @@ def demo(root):
          "MANUAL_REVIEW", []),
         ("missing_baseline", BASELINE, "MANUAL_REVIEW", []),
     ]
+
+
+def demo(root):
+    root.mkdir(parents=True, exist_ok=False)
+    repo = root / "baseline_repo"
+    repo.mkdir()
+    git(repo, "init", "--quiet")
+    (repo / "baseline.cfg").write_text(BASELINE)
+    git(repo, "add", "baseline.cfg")
+    git(repo, "-c", "user.name=MVP Demo", "-c",
+        "user.email=mvp@example.invalid", "commit", "--quiet",
+        "-m", "Approved synthetic lab baseline")
+    commit = git(repo, "rev-parse", "HEAD").strip()
+    cases = scenarios()
     summary = []
     for name, text, status, risks in cases:
         snapshot = root / (name + ".cfg")
