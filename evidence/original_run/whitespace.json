@@ -1,0 +1,19 @@
+{
+  "audit_id": "92bcbff1-c82d-4ba3-92bb-c2c2fb56fccf",
+  "collected_at": "2026-10-05T03:28:27.588802+00:00",
+  "parser": "lab-subset-1.0",
+  "device": "lab-router",
+  "mode": "local_fixture",
+  "stages": [
+    "ingestion",
+    "drift_analysis",
+    "supervisor_review",
+    "audit_persistence"
+  ],
+  "findings": [],
+  "baseline_commit": "dccbd1138abd164d3e28d346ca6beb4486339419",
+  "baseline_sha256": "b4b6876d53517264ded22716c29cd461bb88f602e2b6b5cf9b3080de274ec483",
+  "snapshot_sha256": "3ba98374550dba859669720a93be601b17a48d584fe528e7306a81867dc4f8c5",
+  "status": "NO_DRIFT",
+  "highest_risk": "none"
+}

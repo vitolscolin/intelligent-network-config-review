@@ -1,0 +1,25 @@
+# Generated runs and local Python files
+/runs/
+/demo_run/
+/fresh_demo/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Runtime audit databases and editor files
+*.sqlite
+*.sqlite-*
+*.db
+.DS_Store
+.vscode/
+.idea/

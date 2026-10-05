@@ -1,0 +1,14 @@
+{
+  "audit_id": "1b310065-92c6-4b44-a3d4-193ae572edec",
+  "collected_at": "2026-10-05T03:28:27.790429+00:00",
+  "parser": "lab-subset-1.0",
+  "device": "lab-router",
+  "mode": "local_fixture",
+  "stages": [
+    "ingestion",
+    "audit_persistence"
+  ],
+  "findings": [],
+  "status": "MANUAL_REVIEW",
+  "reason": "Baseline, input, or parser validation failed; raw content withheld. Inspect locally."
+}

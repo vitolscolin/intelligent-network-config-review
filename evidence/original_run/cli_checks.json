@@ -1,0 +1,12 @@
+[
+  {
+    "case": "combined",
+    "exit_code": 0,
+    "stdout": "{\"audit_id\": \"da383a92-d829-441a-8cb1-473cd8e4b18c\", \"status\": \"REVIEW_REQUIRED\", \"findings\": 3}"
+  },
+  {
+    "case": "unsupported",
+    "exit_code": 2,
+    "stdout": "{\"audit_id\": \"dd0d3dde-42f3-4be1-812e-57fefc1e5d85\", \"status\": \"MANUAL_REVIEW\", \"findings\": 0}"
+  }
+]

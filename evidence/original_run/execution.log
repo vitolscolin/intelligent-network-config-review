@@ -1,0 +1,117 @@
+{"audit_id": "4381e027-10fd-4536-a15a-3e2011868472", "status": "NO_DRIFT", "findings": 0}
+{"audit_id": "92bcbff1-c82d-4ba3-92bb-c2c2fb56fccf", "status": "NO_DRIFT", "findings": 0}
+{"audit_id": "d74d67e2-f94c-4548-93e4-153592c14464", "status": "MANUAL_REVIEW", "findings": 0}
+{"audit_id": "2d2299e1-56cf-4f16-834e-f46f0a9038c7", "status": "MANUAL_REVIEW", "findings": 0}
+{"audit_id": "fe7a83fe-1e75-4731-9167-3dce6d3c6d10", "status": "REVIEW_REQUIRED", "findings": 1}
+{"audit_id": "7635f1e3-592c-438a-9c61-2755689ded2d", "status": "REVIEW_REQUIRED", "findings": 1}
+{"audit_id": "787eee5f-5fbd-4b46-905a-adebd98bf191", "status": "REVIEW_REQUIRED", "findings": 1}
+{"audit_id": "2962f316-a777-41a2-8cf4-7a1572298d11", "status": "REVIEW_REQUIRED", "findings": 1}
+{"audit_id": "a1faa467-582d-4fc8-a2fc-50bbe6b68280", "status": "REVIEW_REQUIRED", "findings": 1}
+{"audit_id": "abc065a6-b9a5-4459-9d38-bc84e1deefb0", "status": "REVIEW_REQUIRED", "findings": 3}
+{"audit_id": "c5f0fa94-af64-41dc-ba8b-fa6822f842c0", "status": "MANUAL_REVIEW", "findings": 0}
+{"audit_id": "ca6c895b-0023-4472-8392-c375a2ea2554", "status": "MANUAL_REVIEW", "findings": 0}
+{"audit_id": "1b310065-92c6-4b44-a3d4-193ae572edec", "status": "MANUAL_REVIEW", "findings": 0}
+{
+  "approved_commit": "dccbd1138abd164d3e28d346ca6beb4486339419",
+  "baseline_sha256": "b4b6876d53517264ded22716c29cd461bb88f602e2b6b5cf9b3080de274ec483",
+  "python": "3.12.3",
+  "git": "git version 2.43.0",
+  "cases": [
+    {
+      "case": "no_drift",
+      "status": "NO_DRIFT",
+      "risks": [],
+      "result": "PASS"
+    },
+    {
+      "case": "whitespace",
+      "status": "NO_DRIFT",
+      "risks": [],
+      "result": "PASS"
+    },
+    {
+      "case": "empty",
+      "status": "MANUAL_REVIEW",
+      "risks": [],
+      "result": "PASS"
+    },
+    {
+      "case": "injection",
+      "status": "MANUAL_REVIEW",
+      "risks": [],
+      "result": "PASS"
+    },
+    {
+      "case": "cosmetic",
+      "status": "REVIEW_REQUIRED",
+      "risks": [
+        "low"
+      ],
+      "result": "PASS"
+    },
+    {
+      "case": "vlan",
+      "status": "REVIEW_REQUIRED",
+      "risks": [
+        "medium"
+      ],
+      "result": "PASS"
+    },
+    {
+      "case": "route",
+      "status": "REVIEW_REQUIRED",
+      "risks": [
+        "medium"
+      ],
+      "result": "PASS"
+    },
+    {
+      "case": "acl",
+      "status": "REVIEW_REQUIRED",
+      "risks": [
+        "high"
+      ],
+      "result": "PASS"
+    },
+    {
+      "case": "acl_order",
+      "status": "REVIEW_REQUIRED",
+      "risks": [
+        "high"
+      ],
+      "result": "PASS"
+    },
+    {
+      "case": "combined",
+      "status": "REVIEW_REQUIRED",
+      "risks": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "result": "PASS"
+    },
+    {
+      "case": "unsupported",
+      "status": "MANUAL_REVIEW",
+      "risks": [],
+      "result": "PASS"
+    },
+    {
+      "case": "secret",
+      "status": "MANUAL_REVIEW",
+      "risks": [],
+      "result": "PASS"
+    },
+    {
+      "case": "missing_baseline",
+      "status": "MANUAL_REVIEW",
+      "risks": [],
+      "result": "PASS"
+    }
+  ],
+  "passed": 13,
+  "total": 13,
+  "sqlite_rows": 13,
+  "input_and_baseline_unchanged": true
+}

@@ -1,0 +1,104 @@
+{
+  "approved_commit": "dccbd1138abd164d3e28d346ca6beb4486339419",
+  "baseline_sha256": "b4b6876d53517264ded22716c29cd461bb88f602e2b6b5cf9b3080de274ec483",
+  "python": "3.12.3",
+  "git": "git version 2.43.0",
+  "cases": [
+    {
+      "case": "no_drift",
+      "status": "NO_DRIFT",
+      "risks": [],
+      "result": "PASS"
+    },
+    {
+      "case": "whitespace",
+      "status": "NO_DRIFT",
+      "risks": [],
+      "result": "PASS"
+    },
+    {
+      "case": "empty",
+      "status": "MANUAL_REVIEW",
+      "risks": [],
+      "result": "PASS"
+    },
+    {
+      "case": "injection",
+      "status": "MANUAL_REVIEW",
+      "risks": [],
+      "result": "PASS"
+    },
+    {
+      "case": "cosmetic",
+      "status": "REVIEW_REQUIRED",
+      "risks": [
+        "low"
+      ],
+      "result": "PASS"
+    },
+    {
+      "case": "vlan",
+      "status": "REVIEW_REQUIRED",
+      "risks": [
+        "medium"
+      ],
+      "result": "PASS"
+    },
+    {
+      "case": "route",
+      "status": "REVIEW_REQUIRED",
+      "risks": [
+        "medium"
+      ],
+      "result": "PASS"
+    },
+    {
+      "case": "acl",
+      "status": "REVIEW_REQUIRED",
+      "risks": [
+        "high"
+      ],
+      "result": "PASS"
+    },
+    {
+      "case": "acl_order",
+      "status": "REVIEW_REQUIRED",
+      "risks": [
+        "high"
+      ],
+      "result": "PASS"
+    },
+    {
+      "case": "combined",
+      "status": "REVIEW_REQUIRED",
+      "risks": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "result": "PASS"
+    },
+    {
+      "case": "unsupported",
+      "status": "MANUAL_REVIEW",
+      "risks": [],
+      "result": "PASS"
+    },
+    {
+      "case": "secret",
+      "status": "MANUAL_REVIEW",
+      "risks": [],
+      "result": "PASS"
+    },
+    {
+      "case": "missing_baseline",
+      "status": "MANUAL_REVIEW",
+      "risks": [],
+      "result": "PASS"
+    }
+  ],
+  "passed": 13,
+  "total": 13,
+  "sqlite_rows": 13,
+  "input_and_baseline_unchanged": true
+}
