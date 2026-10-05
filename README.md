@@ -6,8 +6,9 @@ using deterministic rules, and saves findings and a draft baseline-update patch
 for administrator review.
 
 **Current scope:** synthetic `lab-router` demonstrations only. No equipment is
-connected. The application does not approve findings, apply patches, overwrite
-baselines, or execute device commands.
+connected. The application records local baseline approvals and administrator
+decisions; it does not apply patches, overwrite prior baseline versions, or
+execute device commands. Names are self-declared, not authenticated.
 
 ## Requirements
 
@@ -61,16 +62,24 @@ Then open **http://127.0.0.1:8766**. No configuration file is required.
 
 ## Try the review workflow
 
-1. Select **Combined changes**, then **Run audit**.
-2. Open the **HIGH / ACL configuration changed** finding for its explanation and
-   supporting evidence.
-3. Compare approved and observed configurations. Line order, including ACL
+1. On **Run an audit**, choose **Use recommended demo** to select the built-in
+   sample and **Combined changes**. This only prepares the form; select **Run audit**
+   when ready to save a real result.
+2. In **Review results**, open the **HIGH / Traffic access rules (ACLs) changed**
+   finding to read its explanation and supporting evidence.
+3. Compare expected and observed configurations. Line order, including ACL
    ordering, is preserved. On narrow screens, the panels stack vertically.
-4. Select **Review draft response** to inspect the baseline-update patch.
-5. Try **No configuration change** and **Unsupported syntax** to see the other
-   audit outcomes.
-6. Reopen a run from **Audit history**, or select **Download JSON** to export the
-   execution currently being reviewed.
+4. Select **Review draft response** to inspect the proposed baseline update, then
+   **Next: record your decision** to save your reasoning.
+5. Return to **Run an audit** and try **No configuration change** and
+   **Unsupported syntax** to see the other outcomes.
+6. Reopen a result from **Past audits**, or select **Download audit record (JSON)**
+   to export the execution being reviewed.
+
+**Help & terms** explains the network terminology. Technical status codes, audit
+identifiers, and baseline provenance remain available under **Technical details &
+baseline approval** and in downloaded records. Navigation links can be bookmarked;
+the browser Back button returns to the previous view.
 
 The scenario menu includes no change, whitespace only, SNMP location, VLAN label,
 static route, ACL rule, ACL ordering, combined changes, and five exception cases:
@@ -79,21 +88,55 @@ rejection, and missing baseline.
 
 | Status | What it means | Individual-audit CLI exit code |
 | --- | --- | --- |
-| `NO_DRIFT` | No differences in the supported configuration categories | 0 |
-| `REVIEW_REQUIRED` | Supported drift; a draft awaits administrator review | 0 |
-| `MANUAL_REVIEW` | Baseline or input validation failed; risk is not assessed | 2 |
+| `NO_DRIFT` · No supported changes | No differences in the supported configuration categories | 0 |
+| `REVIEW_REQUIRED` · Needs your review | Supported drift; a draft awaits administrator review | 0 |
+| `MANUAL_REVIEW` · Needs investigation | Baseline or input validation failed; risk is not assessed | 2 |
 
 Zero findings in a manual-review case do **not** mean the configuration is safe.
-Raw configuration is withheld from those dashboard results. Overview always
-shows the latest stored audit, even while an older run is open below it.
+Raw configuration is withheld from those dashboard results. The latest-audit summary on **Run an audit** always reflects the newest stored
+result, even when you open an older result in **Review results**.
 Timestamps display in the browser's local timezone. A new workspace starts empty;
 counts are derived from stored executions.
 
-**A baseline update and a device restoration are different actions.** Accepting
-an observed configuration changes what is considered approved. Restoring an
-approved configuration would change the device back through a separate authorized
-procedure. This application performs neither action. Exit code 0 indicates a
-completed audit, not administrator approval.
+**A review, a baseline approval, and a device restoration are separate actions.**
+Accepting an observation records a decision. Approving a separate baseline candidate
+makes it eligible for future audit selection. Restoring a device requires a separate
+authorized procedure outside this application. Exit code 0 means an audit completed,
+not that an administrator approved anything.
+
+## Baseline governance and administrator decisions
+
+The registry starts empty. A fixture reference or Git commit is never automatically
+promoted to an approved baseline. Existing executions retain their original output
+and are not retroactively assigned approval.
+
+1. Under **Baselines**, propose the built-in synthetic reference with a
+   proposer name and reason/change reference.
+2. Open the candidate, inspect its exact configuration and SHA-256 digest, then
+   record **Approve this exact version** or **Reject this candidate** with a name
+   and reason. Approval creates a ledger event; it does not change a device.
+3. Choose the approved version under **Expected settings (baseline)**, then run an audit.
+   The execution records the approval in effect at selection. Default fixture
+   mode remains available for the original demonstration expectations.
+4. Under **Record your decision**, inspect the selected audit and record an
+   acceptance, rejection, acknowledgement, investigation, or deferral. Available
+   actions depend on the audit outcome. Each decision covers the entire audit.
+5. After `ACCEPT_OBSERVED`, the selected audit's observation becomes an available
+   candidate source. Propose it, inspect it, and approve it separately to make a
+   new baseline version available. No existing baseline is overwritten.
+6. Retire an approved version to prevent future selection while retaining its
+   content and history. Historical and already-started audits retain their original
+   approval snapshot.
+
+Names are **self-declared**. This is a local governance demonstration without login,
+role enforcement, signatures, or enforced separation of duties. Review records
+append rather than overwrite, and changed revisions/evidence reject stale decisions.
+They never change original findings, audit status, or draft patches. The database
+is not tamper-proof against someone who controls the local machine.
+
+Use **Download review record** and **Download registry** to export the decision
+history separately from the unchanged execution JSON. For transitions, provenance,
+concurrency rules, and API details, see [the governance policy](docs/governance.md).
 
 ## Local storage
 
@@ -107,6 +150,7 @@ Dashboard data defaults to `runs/dashboard/`, which is excluded from Git:
 | `<request-id>/snapshot.cfg` | Synthetic input for that execution |
 | `<request-id>/baseline_repo/` | Local synthetic baseline Git repository |
 | `audits.sqlite` | The auditor's persisted audit payloads |
+| `governance.sqlite` | Immutable baseline versions and append-only approval/review events |
 
 To use a separate workspace, choose a data directory from the terminal:
 
@@ -143,8 +187,9 @@ against every power failure. If the directory cannot be created at all, no recor
 can be stored; inspect the server terminal and filesystem permissions. Original
 evidence under [`evidence/original_run/`](evidence/original_run/) remains unchanged.
 
-Only allowlisted scenario IDs and UUID request IDs are accepted from the browser;
-paths and commands are not accepted. The UI disables submission during a run,
+Audit inputs accept allowlisted scenarios, UUID request IDs, and optional registry
+baseline IDs. Governance forms also accept decision codes, bounded names/reasons,
+and revision/digest checks; paths, raw configurations, and commands are not accepted. The UI disables submission during a run,
 the server rejects concurrent executions, and a completed request ID returns its
 existing result. A pending ID is retained in the browser session after a network
 failure. Host and Origin checks restrict browser requests to the local dashboard.
@@ -213,7 +258,7 @@ py -3 -m venv .venv
 ```
 
 The harness starts a temporary dashboard on an available localhost port, runs the
-normal and recovery browser suites, and stops the server afterward. Every run uses
+dashboard, recovery, and governance browser suites, and stops the server afterward. Every run uses
 fresh temporary data. Screenshots and the server log are saved under ignored
 `runs/ci-browser-screenshots/` and `runs/ci-browser.log`.
 
@@ -226,16 +271,18 @@ The suites check empty/loading/error states, combined/no-change/manual-review
 flows, evidence and patch equality, JSON downloads, reopening history, mobile
 layout, interrupted execution controls, recovery without rerunning, and preserving
 old records when starting a new execution. They also verify that a failed history
-refresh cannot mislabel an already-saved audit as unconfirmed.
+refresh cannot mislabel an already-saved audit as unconfirmed. Governance checks cover
+proposal/approval/retirement, governed comparisons, unchanged evidence, review exports,
+stale decisions, and restrictions on manual-review results.
 
 ### Continuous integration
 
 [GitHub Actions](https://github.com/vitolscolin/intelligent-network-config-review/actions/workflows/ci.yml)
 runs on pushes and pull requests, and can be started manually:
 
-- Fixture and HTTP/recovery tests on Linux, Windows, and macOS using Python 3.10
+- Fixture and HTTP/recovery/governance tests on Linux, Windows, and macOS using Python 3.10
   and 3.12.
-- Chromium dashboard and recovery browser checks on Linux/Python 3.12.
+- Chromium dashboard, recovery, and governance browser checks on Linux/Python 3.12.
 - Synthetic browser screenshots and the server log retained for seven days.
 
 The workflow uses read-only repository permissions, pinned action commits, and
@@ -264,6 +311,8 @@ system. See the linked run results for the status of a particular commit.
 | `auditor.py` | Parser, ordered comparison, risk rules, draft generation, and persistence |
 | `demo.py` | Shared synthetic fixtures and the 13-scenario assertion harness |
 | `dashboard.py` | Local HTTP server, allowlisted execution, and history |
+| `governance.py` | Transactional baseline lifecycle and append-only review ledger |
+| `docs/governance.md` | Local approval policy, provenance, and API contract |
 | `web/` | HTML, CSS, and JavaScript frontend; no build step |
 | `tests/` | HTTP recovery tests and optional Playwright browser checks |
 | `.github/workflows/ci.yml` | Cross-platform backend and Linux browser CI |
@@ -305,9 +354,9 @@ integrated. Hosting the source on GitHub does not connect the auditor to its API
 3. **Expand parser validation and evaluation.** Add malformed addresses, VLAN
    boundaries, duplicate statements, incomplete snapshots, and more ACL-order
    cases; measure results against independently labeled lab configurations.
-4. **Define baseline governance and review records.** Establish how a baseline
-   becomes approved and how administrator decisions are recorded, without
-   coupling review to device execution.
+4. **Harden organizational governance before real use.** Define authenticated
+   roles, separation-of-duties rules, signed records, and retention requirements.
+   The current self-declared local decision log does not enforce those controls.
 5. **Add one authorized read-only input adapter.** After parser and data-handling
    requirements are established, introduce a constrained lab collector with
    explicit provenance and credential handling. Keep device writes out of scope.

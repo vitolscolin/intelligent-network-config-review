@@ -17,7 +17,7 @@ from dashboard import Handler, Store, ThreadingHTTPServer
 from demo import scenarios
 
 
-class DashboardTests(unittest.TestCase):
+class DashboardTestCase(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.root = Path(self.tmp.name)
@@ -54,6 +54,8 @@ class DashboardTests(unittest.TestCase):
     def run_case(self, name, key=None):
         return self.request('/api/runs', {'scenario': name, 'request_id': key or str(uuid.uuid4())})
 
+
+class DashboardTests(DashboardTestCase):
     def test_fixtures_download_and_restart(self):
         self.assertEqual(self.request('/api/runs'), (200, []))
         self.assertEqual(len(self.request('/api/scenarios')[1]), 13)

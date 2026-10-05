@@ -13,6 +13,7 @@ from urllib.parse import urlsplit
 
 from auditor import audit, digest, git, parse
 from demo import BASELINE, scenarios
+from governance import Governance, GovernanceError
 
 WEB = Path(__file__).parent / 'web'
 LABELS = [
@@ -95,6 +96,7 @@ class Store:
     def __init__(self, root):
         self.root = root
         root.mkdir(parents=True, exist_ok=True)
+        self.governance = Governance(root)
         self.lock = threading.Lock()
         self.active = None
         # Reconcile saved auditor output, never rerun an audit during startup.
@@ -172,6 +174,8 @@ class Store:
             raise ValueError('Audit does not match journal')
         record = {'id': key, 'scenario': meta['scenario'], 'scenario_name': CASES[meta['scenario']][1],
                   'execution_status': 'COMPLETED', 'created_at': meta['created_at'], 'audit': result}
+        if 'baseline_governance' in meta:
+            record['baseline_governance'] = meta['baseline_governance']
         if result['status'] != 'MANUAL_REVIEW':
             record['configurations'] = self.configurations(folder, result)
         # Repair missing persistence copies without inserting a second audit.
@@ -219,30 +223,35 @@ class Store:
         finally:
             self.lock.release()
 
-    def run(self, scenario, key):
+    def run(self, scenario, key, baseline_id=None):
         if not self.lock.acquire(blocking=False):
             return 409, {'error': 'An audit is already running. Wait for it to finish, then refresh history.'}
         folder = self.root / key
         try:
             if folder.exists():
                 record = self.read(key)
-                if record['scenario'] != scenario:
-                    return 409, {'error': 'This request ID belongs to a different or unknown scenario. Start a new audit.'}
+                if record['scenario'] != scenario or record.get('baseline_governance', {}).get('baseline_id') != baseline_id:
+                    return 409, {'error': 'This request ID belongs to a different scenario or baseline selection. Start a new audit.'}
                 if record.get('audit'):
                     return 200, record
                 return 409, {'error': 'This execution is incomplete. Open it in history to recover saved output or start a new execution.'}
+            baseline = BASELINE
+            selection = {'mode': 'FIXTURE_REFERENCE', 'baseline_id': None, 'sha256': digest(BASELINE)}
+            if baseline_id is not None:
+                baseline, selection = self.governance.approved(baseline_id)
             folder.mkdir()
             self.active = key
             meta = {'scenario': scenario, 'audit_id': key,
-                    'created_at': datetime.now(timezone.utc).isoformat(), 'state': 'RUNNING'}
+                    'created_at': datetime.now(timezone.utc).isoformat(), 'state': 'RUNNING',
+                    'baseline_governance': selection}
             atomic_json(folder / 'request.json', meta)
             repo = folder / 'baseline_repo'
             repo.mkdir()
             git(repo, 'init', '--quiet')
-            (repo / 'baseline.cfg').write_text(BASELINE)
+            (repo / 'baseline.cfg').write_text(baseline)
             git(repo, 'add', 'baseline.cfg')
             git(repo, '-c', 'user.name=Dashboard Demo', '-c', 'user.email=demo@example.invalid',
-                'commit', '--quiet', '-m', 'Synthetic approved baseline')
+                'commit', '--quiet', '-m', 'Synthetic audit reference snapshot')
             commit = git(repo, 'rev-parse', 'HEAD').strip()
             snapshot = folder / 'snapshot.cfg'
             current = CASES[scenario][0]
@@ -262,9 +271,21 @@ class Store:
             self.active = None
             self.lock.release()
 
+    def propose_baseline(self, data):
+        if data['source'] == 'fixture':
+            return self.governance.propose(data, BASELINE, {'kind': 'BUILT_IN_FIXTURE'})
+        record = self.read(data['source'])
+        history = self.governance.review_history(record)
+        if not history['evidence_matches'] or not history['events'] or history['events'][-1]['action'] != 'ACCEPT_OBSERVED':
+            raise GovernanceError('Record an acceptance decision for this audit before proposing its observed configuration.')
+        return self.governance.propose(data, record['configurations']['observed'],
+            {'kind': 'OBSERVED_AUDIT', 'audit_id': record['audit']['audit_id'],
+             'audit_sha256': history['audit_sha256'], 'review_event_id': history['events'][-1]['event_id'],
+             'source_baseline_commit': record['audit'].get('baseline_commit')})
+
 
 class Handler(BaseHTTPRequestHandler):
-    def respond(self, status, data, content_type='application/json', download=False):
+    def respond(self, status, data, content_type='application/json', download=False, filename='audit-execution.json'):
         body = json.dumps(data).encode() if content_type == 'application/json' else data
         self.send_response(status)
         self.send_header('Content-Type', content_type)
@@ -273,7 +294,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header('X-Content-Type-Options', 'nosniff')
         self.send_header('Content-Security-Policy', "default-src 'self'; style-src 'self'; script-src 'self'; frame-ancestors 'none'")
         if download:
-            self.send_header('Content-Disposition', 'attachment; filename="audit-execution.json"')
+            self.send_header('Content-Disposition', f'attachment; filename="{filename}"')
         self.end_headers()
         self.wfile.write(body)
 
@@ -288,6 +309,12 @@ class Handler(BaseHTTPRequestHandler):
             return self.respond(403, {'error': 'Use the localhost dashboard URL.'})
         path = urlsplit(self.path).path
         try:
+            if path in ('/api/baselines', '/api/baselines/download'):
+                return self.respond(200, self.server.store.governance.list_baselines(), download=path.endswith('/download'), filename='baseline-registry.json')
+            review = re.fullmatch(r'/api/runs/([^/]+)/reviews(/download)?', path)
+            if review and UUID.fullmatch(review[1]):
+                record = self.server.store.read(review[1])
+                return self.respond(200, self.server.store.governance.review_history(record), download=bool(review[2]), filename='audit-review-record.json')
             if path == '/api/scenarios':
                 return self.respond(200, [{'id': k, 'name': v[1], 'description': v[2]} for k, v in CASES.items()])
             if path == '/api/runs':
@@ -296,20 +323,28 @@ class Handler(BaseHTTPRequestHandler):
             if match and UUID.fullmatch(match[1]):
                 return self.respond(200, self.server.store.read(match[1]), download=bool(match[2]))
             assets = {'/': ('index.html', 'text/html; charset=utf-8'),
+                      '/navigation.js': ('navigation.js', 'text/javascript; charset=utf-8'),
                       '/app.js': ('app.js', 'text/javascript; charset=utf-8'),
+                      '/governance.js': ('governance.js', 'text/javascript; charset=utf-8'),
                       '/style.css': ('style.css', 'text/css; charset=utf-8')}
             if path in assets:
                 name, mime = assets[path]
                 return self.respond(200, (WEB / name).read_bytes(), mime)
             self.respond(404, {'error': 'Not found.'})
+        except GovernanceError as error:
+            self.respond(error.status, {'error': str(error)})
         except FileNotFoundError:
             self.respond(404, {'error': 'Execution record not found. Refresh history.'})
-        except (OSError, ValueError):
+        except (OSError, ValueError, sqlite3.Error):
             self.respond(500, {'error': 'Cannot read local records. Check the dashboard data directory and server terminal.'})
 
     def do_POST(self):
         if not self.local_request():
             return self.respond(403, {'error': 'Cross-origin requests are not allowed.'})
+        decision = re.fullmatch(r'/api/baselines/([^/]+)/decisions', self.path)
+        review = re.fullmatch(r'/api/runs/([^/]+)/reviews', self.path)
+        if self.path == '/api/baselines' or decision or review:
+            return self.governance_post(decision, review)
         recovery = re.fullmatch(r'/api/runs/([^/]+)/recover', self.path)
         if recovery and UUID.fullmatch(recovery[1]):
             return self.respond(*self.server.store.recover(recovery[1]))
@@ -320,22 +355,61 @@ class Handler(BaseHTTPRequestHandler):
             if not 0 < length <= 1024 or self.headers.get('Content-Type') != 'application/json':
                 raise ValueError()
             data = json.loads(self.rfile.read(length))
-            if not isinstance(data, dict) or set(data) != {'scenario', 'request_id'}:
+            if not isinstance(data, dict) or set(data) not in ({'scenario', 'request_id'}, {'scenario', 'request_id', 'baseline_id'}):
                 raise ValueError()
             if not isinstance(data['scenario'], str) or data['scenario'] not in CASES:
+                raise ValueError()
+            if data.get('baseline_id') is not None and (not isinstance(data['baseline_id'], str) or not UUID.fullmatch(data['baseline_id'])):
                 raise ValueError()
             if not isinstance(data['request_id'], str) or not UUID.fullmatch(data['request_id']):
                 raise ValueError()
         except (ValueError, TypeError):
             return self.respond(400, {'error': 'Choose an allowlisted synthetic scenario and a valid request ID.'})
         try:
-            status, record = self.server.store.run(data['scenario'], data['request_id'])
+            status, record = self.server.store.run(data['scenario'], data['request_id'], data.get('baseline_id'))
             self.respond(status, record)
+        except GovernanceError as error:
+            self.respond(error.status, {'error': str(error)})
         except Exception:
             # Keep local paths and raw input out of browser errors.
             import traceback
             traceback.print_exc()
             self.respond(500, {'error': 'Execution failed. Check Git installation, free disk space, and directory permissions in the server terminal. Refresh history before starting a new audit.'})
+
+    def governance_post(self, decision, review):
+        try:
+            length = int(self.headers.get('Content-Length', '0'))
+            if not 0 < length <= 8192 or self.headers.get('Content-Type') != 'application/json':
+                raise GovernanceError('Send a JSON decision of at most 8192 bytes.', 400)
+            data = json.loads(self.rfile.read(length))
+            common = {'request_id', 'actor', 'reason'}
+            fields = common | ({'action', 'expected_revision', 'expected_sha256'} if decision else
+                               {'action', 'expected_revision', 'expected_audit_sha256'} if review else {'source'})
+            if not isinstance(data, dict) or set(data) != fields:
+                raise GovernanceError('Unexpected or missing decision fields.', 400)
+            governance = self.server.store.governance
+            if decision or review:
+                key = (decision or review)[1]
+                if not UUID.fullmatch(key):
+                    raise GovernanceError('Invalid record ID.', 400)
+                if decision:
+                    result = governance.decide_baseline(key, data)
+                else:
+                    result = governance.review(self.server.store.read(key), data)
+            else:
+                source = data['source']
+                if not isinstance(source, str) or (source != 'fixture' and not UUID.fullmatch(source)):
+                    raise GovernanceError('Choose the fixture or a saved audit as the candidate source.', 400)
+                result = self.server.store.propose_baseline(data)
+            self.respond(200, result)
+        except GovernanceError as error:
+            self.respond(error.status, {'error': str(error)})
+        except FileNotFoundError:
+            self.respond(404, {'error': 'Audit record not found.'})
+        except (ValueError, TypeError):
+            self.respond(400, {'error': 'Invalid decision request.'})
+        except (OSError, sqlite3.Error):
+            self.respond(500, {'error': 'Cannot save the governance record. Check local storage and retry the same request.'})
 
 
 def main():
