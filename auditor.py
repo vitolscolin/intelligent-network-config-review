@@ -5,6 +5,7 @@ import hashlib
 import json
 import re
 import sqlite3
+from contextlib import closing
 import subprocess
 import uuid
 from datetime import datetime, timezone
@@ -131,7 +132,7 @@ def audit(repo, commit, snapshot, database, report, *, audit_id=None):
     stage("audit_persistence")
     # Only supported demo syntax reaches storage; no raw config is persisted.
     payload = json.dumps(run, indent=2)
-    with sqlite3.connect(database) as connection:
+    with closing(sqlite3.connect(database)) as connection, connection:
         connection.execute("CREATE TABLE IF NOT EXISTS audits "
                            "(id TEXT PRIMARY KEY, payload TEXT NOT NULL)")
         connection.execute("INSERT INTO audits VALUES (?, ?)",

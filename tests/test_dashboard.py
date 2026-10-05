@@ -2,6 +2,7 @@
 import json
 from pathlib import Path
 import sqlite3
+from contextlib import closing
 import tempfile
 import threading
 import unittest
@@ -72,7 +73,7 @@ class DashboardTests(unittest.TestCase):
             if name == 'acl_order':
                 self.assertLess(record['configurations']['observed'].index('deny'), record['configurations']['observed'].index('permit'))
         before = self.request('/api/runs')[1]
-        with sqlite3.connect(self.root / 'audits.sqlite') as conn:
+        with closing(sqlite3.connect(self.root / 'audits.sqlite')) as conn, conn:
             saved = {row[0]: json.loads(row[1]) for row in conn.execute('SELECT id,payload FROM audits')}
         self.assertEqual(len(saved), 13)
         for record in before:
@@ -122,7 +123,7 @@ class DashboardTests(unittest.TestCase):
         self.assertEqual(recovered['audit']['audit_id'], key)
         self.assertEqual(recovered['audit']['status'], 'REVIEW_REQUIRED')
         self.assertEqual(self.run_case('combined', key), (200, recovered))
-        with sqlite3.connect(self.root / 'audits.sqlite') as conn:
+        with closing(sqlite3.connect(self.root / 'audits.sqlite')) as conn, conn:
             self.assertEqual(conn.execute('SELECT count(*) FROM audits').fetchone()[0], 1)
 
     def test_sqlite_only_output_recovers_after_restart(self):
@@ -143,7 +144,7 @@ class DashboardTests(unittest.TestCase):
         record = self.request('/api/runs')[1][0]
         self.assertEqual(record['audit']['audit_id'], key)
         self.assertEqual(load_report := json.loads((self.root / key / 'audit.json').read_text()), record['audit'])
-        with sqlite3.connect(self.root / 'audits.sqlite') as conn:
+        with closing(sqlite3.connect(self.root / 'audits.sqlite')) as conn, conn:
             self.assertEqual(json.loads(conn.execute('SELECT payload FROM audits').fetchone()[0]), load_report)
 
     def test_interruption_before_audit_is_visible_and_requires_new_execution(self):
@@ -178,7 +179,7 @@ class DashboardTests(unittest.TestCase):
         _, record = self.run_case('no_drift')
         folder = self.root / record['id']
         (folder / 'record.json').unlink()
-        with sqlite3.connect(self.root / 'audits.sqlite') as conn:
+        with closing(sqlite3.connect(self.root / 'audits.sqlite')) as conn, conn:
             conn.execute('DELETE FROM audits')
         self.assertEqual(self.request('/api/runs/' + record['id'] + '/recover', {}), (200, record))
         (folder / 'request.json').unlink()
@@ -195,6 +196,38 @@ class DashboardTests(unittest.TestCase):
         self.assertEqual(self.request('/api/runs')[0], 200)
         self.assertEqual(self.request('/api/runs/' + record['id'] + '/recover', {})[0], 409)
         self.assertEqual(self.request('/api/runs/' + record['id'] + '/recover', {}, {'Origin':'https://untrusted.invalid'})[0], 403)
+
+    def test_connections_close_after_success_failure_and_recovery(self):
+        # Keep references alive so garbage collection cannot hide leaked handles.
+        connect = sqlite3.connect
+        connections = []
+
+        def tracked_connect(*args, **kwargs):
+            connection = connect(*args, **kwargs, check_same_thread=False)
+            connections.append(connection)
+            return connection
+
+        original = dashboard.atomic_json
+
+        def fail_record(path, value):
+            if path.name == 'record.json':
+                raise OSError('Simulated publication failure')
+            return original(path, value)
+
+        try:
+            with patch('dashboard.sqlite3.connect', side_effect=tracked_connect):
+                self.assertEqual(self.run_case('no_drift')[0], 201)
+                key = str(uuid.uuid4())
+                with patch('dashboard.atomic_json', side_effect=fail_record):
+                    self.assertEqual(self.run_case('combined', key)[0], 500)
+                self.assertEqual(self.request('/api/runs/' + key + '/recover', {})[0], 200)
+            self.assertTrue(connections)
+            for connection in connections:
+                with self.assertRaisesRegex(sqlite3.ProgrammingError, 'closed database'):
+                    connection.execute('SELECT 1')
+        finally:
+            for connection in connections:
+                connection.close()
 
 
 if __name__ == '__main__':

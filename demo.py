@@ -2,6 +2,7 @@
 import argparse
 import json
 import sqlite3
+from contextlib import closing
 import subprocess
 import sys
 from pathlib import Path
@@ -79,7 +80,7 @@ def demo(root):
     assert (repo / "baseline.cfg").read_text() == BASELINE
     assert git(repo, "rev-parse", "HEAD").strip() == commit
     assert git(repo, "status", "--porcelain").strip() == ""
-    with sqlite3.connect(root / "audits.sqlite") as connection:
+    with closing(sqlite3.connect(root / "audits.sqlite")) as connection, connection:
         rows = connection.execute("SELECT payload FROM audits").fetchall()
     assert len(rows) == len(cases)
     assert all("DEMO_SECRET" not in row[0] for row in rows)

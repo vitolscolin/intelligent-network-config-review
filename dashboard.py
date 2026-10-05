@@ -3,6 +3,7 @@ import argparse
 import json
 import os
 import sqlite3
+from contextlib import closing
 from datetime import datetime, timezone
 import re
 import threading
@@ -174,7 +175,7 @@ class Store:
         if result['status'] != 'MANUAL_REVIEW':
             record['configurations'] = self.configurations(folder, result)
         # Repair missing persistence copies without inserting a second audit.
-        with sqlite3.connect(self.root / 'audits.sqlite') as connection:
+        with closing(sqlite3.connect(self.root / 'audits.sqlite')) as connection, connection:
             connection.execute('CREATE TABLE IF NOT EXISTS audits (id TEXT PRIMARY KEY, payload TEXT NOT NULL)')
             existing = connection.execute('SELECT payload FROM audits WHERE id=?', (result['audit_id'],)).fetchone()
             if existing and json.loads(existing[0]) != result:
@@ -202,7 +203,7 @@ class Store:
                 result = None
             database = self.root / 'audits.sqlite'
             if database.exists():
-                with sqlite3.connect(database) as connection:
+                with closing(sqlite3.connect(database)) as connection, connection:
                     row = connection.execute('SELECT payload FROM audits WHERE id=?', (meta['audit_id'],)).fetchone()
                 if row:
                     saved = json.loads(row[0])
