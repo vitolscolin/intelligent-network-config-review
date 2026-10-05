@@ -30,7 +30,7 @@ function overview() {
 function history() {
   $('history-rows').replaceChildren(); $('history-empty').hidden = !!records.length;
   records.forEach(record => {
-    const run = record.audit, row = node('tr'); if (selected?.id === record.id) row.className = 'selected';
+    const run = record.audit, row = node('tr'); row.dataset.runId = record.id; if (selected?.id === record.id) row.className = 'selected';
     row.append(node('td', date(timeOf(record))), node('td', record.scenario_name));
     const status = node('td'); status.append(badge(statusOf(record), statusOf(record))); row.append(status);
     const risk = node('td'); risk.append(badge(run?.highest_risk?.toUpperCase() || 'NOT ASSESSED', run?.highest_risk || 'none')); row.append(risk);
@@ -41,6 +41,7 @@ function history() {
 }
 function show(record) {
   selected = record; const run = record.audit;
+  if (typeof showReviewLog === 'function') showReviewLog(record);
   $('selected-meta').textContent = `${record.scenario_name} · ${date(timeOf(record))} · lab-router · ${statusOf(record)}`;
   $('download').hidden = false; $('download').href = `/api/runs/${record.id}/download`;
   const content = $('review-content'); content.className = 'panel'; content.replaceChildren();
@@ -88,9 +89,14 @@ function show(record) {
       const link = node('a', 'Review draft response →', 'text-link'); link.href = '#response'; body.append(link); detail.append(summary, body); content.append(detail);
     });
     const grid = node('div', undefined, 'config-grid');
-    for (const side of ['approved', 'observed']) { const col = node('div'); col.append(node('h3', side === 'approved' ? 'Approved synthetic configuration' : 'Observed synthetic configuration'), node('pre', record.configurations[side])); grid.append(col); }
+    for (const side of ['approved', 'observed']) { const col = node('div'); col.append(node('h3', side === 'approved' ? (record.baseline_governance?.mode === 'GOVERNED' ? 'Approved registry configuration' : 'Fixture reference · approval not established') : 'Observed synthetic configuration'), node('pre', record.configurations[side])); grid.append(col); }
     content.append(grid);
   }
+  const binding = record.baseline_governance;
+  const approval = binding?.mode === 'GOVERNED'
+    ? `Registry baseline ${binding.baseline_id} · approved at selection by ${binding.approval_event.actor} · event ${binding.approval_event.event_id}`
+    : 'Fixture or legacy reference: no recorded governance approval. Git commit existence is not approval.';
+  content.append(node('p', approval, 'muted provenance-note'));
   const provenance = node('details'), summary = node('summary', 'Execution provenance'); provenance.append(summary, node('pre', `Audit ID: ${run.audit_id}\nParser: ${run.parser}\nMode: ${run.mode}\nBaseline commit: ${run.baseline_commit || 'Unavailable'}\nRecorded stages: ${run.stages.join(' → ')}`)); content.append(provenance);
   $('patch').replaceChildren(run.proposal ? patch(run.proposal.patch) : node('p', run.status === 'NO_DRIFT' ? 'No baseline-update patch is needed: no supported drift was detected.' : 'No proposal generated: resolve the validation issue before assessing a response.'));
   history();
@@ -106,16 +112,17 @@ $('scenario').onchange = () => { $('scenario-description').textContent = scenari
 $('refresh').onclick = async () => { try { await refresh(); error(''); } catch (e) { error(e.message); } };
 $('audit-form').onsubmit = async event => {
   event.preventDefault(); if (busy) return; busy = true; error('');
-  $('run-button').disabled = true; $('scenario').disabled = true; $('run-button').textContent = 'Running…'; $('audit-form').setAttribute('aria-busy','true');
+  $('run-button').disabled = true; $('scenario').disabled = true; $('baseline-selection').disabled = true; $('run-button').textContent = 'Running…'; $('audit-form').setAttribute('aria-busy','true');
   const scenario = $('scenario').value;
+  const baseline_id = $('baseline-selection').value || null;
   const pendingKey = 'network-review-pending';
   let requestId = crypto.randomUUID();
   try {
     const pending = JSON.parse(sessionStorage.getItem(pendingKey) || 'null');
-    if (pending?.scenario === scenario) requestId = pending.request_id;
-    sessionStorage.setItem(pendingKey, JSON.stringify({scenario, request_id:requestId}));
+    if (pending?.scenario === scenario && (pending.baseline_id || null) === baseline_id) requestId = pending.request_id;
+    sessionStorage.setItem(pendingKey, JSON.stringify({scenario, baseline_id, request_id:requestId}));
     $('progress').textContent = 'Audit in progress: preparing fixture, comparing configurations, and persisting the result…';
-    const record = await api('/api/runs', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({scenario,request_id:requestId})});
+    const record = await api('/api/runs', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({scenario,baseline_id,request_id:requestId})});
     sessionStorage.removeItem(pendingKey);
     // A saved execution remains successful even if the subsequent history read fails.
     records = [record, ...records.filter(existing => existing.id !== record.id)];
@@ -129,6 +136,6 @@ $('audit-form').onsubmit = async event => {
     error(e.message); $('progress').textContent = 'Execution was not confirmed. Refresh history before retrying.';
     // A received rejection is safe to retry with a new ID; network errors retain the ID.
     if (!(e instanceof TypeError)) sessionStorage.removeItem(pendingKey);
-  } finally { busy = false; $('run-button').disabled = false; $('scenario').disabled = false; $('run-button').textContent = 'Run audit →'; $('audit-form').removeAttribute('aria-busy'); }
+  } finally { busy = false; $('run-button').disabled = false; $('scenario').disabled = false; $('baseline-selection').disabled = false; $('run-button').textContent = 'Run audit →'; $('audit-form').removeAttribute('aria-busy'); }
 };
 (async () => { try { scenarios = await api('/api/scenarios'); scenarios.forEach(s => {const option = node('option', s.name); option.value = s.id; $('scenario').append(option);}); $('scenario').value = 'combined'; $('scenario').onchange(); await refresh(); $('scenario').disabled = false; $('run-button').disabled = false; $('progress').textContent = 'Ready · Each execution is stored locally.'; } catch (e) {error(e.message); $('progress').textContent = 'Could not load the dashboard. Check the server and reload this page.';} })();

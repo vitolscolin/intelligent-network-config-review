@@ -551,3 +551,23 @@ pre {
 .badge.FAILED,.badge.INTERRUPTED{background:#fae6e5;color:#9e302e}
 .badge.RUNNING{background:#e4f2ee;color:#226450}
 #review-content > button{margin:8px 12px 8px 0}
+.governance-form {display:grid;grid-template-columns:1fr;gap:8px;max-width:760px;margin:22px 0}
+.governance-form label {margin:0}
+.governance-form input,.governance-form textarea {font:inherit;color:inherit;background:#fff;border:1px solid #aebfc9;border-radius:6px;padding:10px 12px;width:100%}
+.governance-form textarea {resize:vertical;min-height:88px}
+.governance-form button {justify-self:start}
+.governance-form p {margin:0 0 8px;font-size:12px}
+.governance-notice {padding:14px;border:1px solid #cfdfe3;background:#eaf2f3;border-radius:6px;font-size:13px}
+.decision-events {padding-left:24px}
+.decision-events li {margin:16px 0;overflow-wrap:anywhere}
+.decision-events p {white-space:pre-wrap;margin:5px 0}
+.decision-events small {color:var(--muted)}
+.provenance-note {overflow-wrap:anywhere;font-size:12px}
+.badge.PENDING {background:#fff0d5;color:#80560e}
+.badge.APPROVED {background:#e4f2ee;color:#226450}
+.badge.REJECTED,.badge.RETIRED {background:#edf1f5;color:#546372}
+input:focus-visible,textarea:focus-visible {outline:3px solid #2484cc;outline-offset:3px}
+#baseline-selection {margin-bottom:4px}
+
+.scenario-field,.governance-form {min-width:0}
+.governance-form {grid-template-columns:minmax(0,1fr)}

@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="/style.css">
 <script src="/app.js" defer>
 </script>
+<script src="/governance.js" defer></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to main content</a>
@@ -23,6 +24,8 @@
 <a href="#run">Run an audit</a>
 <a href="#review">Review changes</a>
 <a href="#response">Draft response</a>
+<a href="#decisions">Administrator decisions</a>
+<a href="#baselines">Baseline registry</a>
 <a href="#history">Audit history</a>
 </nav>
 <div class="sidebar-bottom">
@@ -41,7 +44,7 @@
 </header>
 <div class="notice">
 <strong>Sample device: lab-router</strong>
-<span>Local fixtures only. Audits generate review drafts; no device or baseline changes are applied.</span>
+<span>Local fixtures only. Synthetic audits and local decision records. No patches or device changes are executed.</span>
 </div>
 <div id="error" role="alert" hidden>
 </div>
@@ -85,6 +88,9 @@
 <p>Start with combined changes, then inspect the high-risk ACL finding and its draft response.</p>
 <form id="audit-form">
 <div class="scenario-field">
+<label for="baseline-selection">Comparison baseline</label>
+<select id="baseline-selection"><option value="">Fixture reference · not governed</option></select>
+<p class="muted">Approved registry versions are optional. Changing the baseline can change scenario outcomes.</p>
 <label for="scenario">Demonstration scenario</label>
 <select id="scenario" required disabled>
 </select>
@@ -120,9 +126,39 @@
 <div class="panel">
 <div class="draft-notice">
 <strong>Draft · Requires administrator review</strong>
-<p>Accepting an observed configuration updates what is considered approved. Restoring the approved configuration changes the device back. These are different decisions; this dashboard performs neither.</p>
+<p>Accepting an observation records a review decision only. A separate candidate approval makes a version eligible for future audits. Restoring a device is a separate authorized procedure; this dashboard never executes it.</p>
 </div>
 <div id="patch" class="muted">A baseline-update draft will appear after a supported change is detected.</div>
+</div>
+</section>
+<section id="decisions">
+<div class="section-head"><div><p class="eyebrow">04 / RECORD</p><h2>Administrator decisions</h2></div><a id="review-download" class="text-link" hidden>Download review record ↓</a></div>
+<div class="panel">
+<p class="governance-notice"><strong>Local decision log · Self-declared identity.</strong> Names are not authenticated. This prototype records decisions; it does not enforce organizational authority or separation of duties. Use synthetic data only.</p>
+<div id="review-log" class="muted">Open a completed audit to record a decision.</div>
+<form id="review-decision-form" class="governance-form" hidden>
+<label for="review-action">Decision for the entire audit</label><select id="review-action" required></select>
+<p id="review-action-help" class="muted"></p>
+<label for="review-actor">Administrator name (self-declared)</label><input id="review-actor" required maxlength="100" autocomplete="off">
+<label for="review-reason">Reason / change reference</label><textarea id="review-reason" required maxlength="2000" rows="3"></textarea>
+<button id="review-submit" type="submit">Record review decision</button>
+</form>
+<p id="review-message" role="status" aria-live="polite"></p>
+</div>
+</section>
+<section id="baselines">
+<div class="section-head"><div><p class="eyebrow">REFERENCE GOVERNANCE</p><h2>Baseline registry</h2></div><a href="/api/baselines/download" class="text-link">Download registry ↓</a></div>
+<div class="panel">
+<p>Propose a version → inspect its exact content → explicitly approve or reject. Only approved versions can be selected for a new audit. Retiring a version prevents future selection and preserves its history.</p>
+<form id="baseline-proposal-form" class="governance-form">
+<label for="baseline-source">Candidate source</label><select id="baseline-source"><option value="fixture">Built-in synthetic reference</option></select>
+<p class="muted">An observed configuration becomes eligible after an ACCEPT_OBSERVED review decision. Proposing it does not approve it.</p>
+<label for="baseline-actor">Proposer name (self-declared)</label><input id="baseline-actor" required maxlength="100" autocomplete="off">
+<label for="baseline-reason">Reason / change reference</label><textarea id="baseline-reason" required maxlength="2000" rows="3"></textarea>
+<button type="submit">Propose baseline candidate</button>
+</form>
+<p id="baseline-message" role="status" aria-live="polite"></p>
+<div id="baseline-list" class="muted">Loading baseline registry…</div>
 </div>
 </section>
 <section id="history">

@@ -40,6 +40,8 @@ def main():
                 subprocess.run(command, cwd=ROOT, check=True)
                 subprocess.run([sys.executable, 'tests/browser_recovery_check.py', '--url', url,
                                 '--data-dir', directory, *(['--chrome', args.chrome] if args.chrome else [])], cwd=ROOT, check=True)
+                subprocess.run([sys.executable, 'tests/browser_governance_check.py', '--url', url,
+                                *(['--chrome', args.chrome] if args.chrome else [])], cwd=ROOT, check=True)
             finally:
                 server.terminate()
                 try:
